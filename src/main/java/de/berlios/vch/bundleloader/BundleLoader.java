@@ -13,8 +13,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
-import org.osgi.framework.ServiceReference;
-import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.framework.wiring.FrameworkWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,19 +105,16 @@ public class BundleLoader implements BundleActivator, BundleListener {
     }
 
     private boolean resolve(Bundle bundle) {
-        ServiceReference ref = ctx.getServiceReference(PackageAdmin.class.getName());
-        if (ref == null) {
-            logger.warn("PackageAdmin service is unavailable.");
-            return false;
-        }
-
-        PackageAdmin pa = (PackageAdmin) ctx.getService(ref);
-        if (pa == null) {
-            logger.warn("PackageAdmin service is unavailable.");
-            return false;
-        }
-
-        return pa.resolveBundles(new Bundle[] { bundle });
+    	Bundle systemBundle = ctx.getBundle(0);
+    	FrameworkWiring frameworkWiring = systemBundle.adapt(FrameworkWiring.class);
+    	if (frameworkWiring == null) {
+    		logger.warn("Couldn't adapt system bundle to FrameworkWiring");
+    		return false;
+    	}
+    	
+    	List<Bundle> resolveThis = new ArrayList<Bundle>();
+    	resolveThis.add(bundle);
+        return frameworkWiring.resolveBundles(resolveThis);
     }
 
     @Override
